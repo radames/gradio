@@ -703,7 +703,7 @@ class Interface:
         server_port, path_to_local_server, app, server = networking.start_server(
             self, server_name, server_port, ssl_keyfile, ssl_certfile
         )
-        
+
         self.local_url = path_to_local_server
         self.server_port = server_port
         self.status = "RUNNING"
