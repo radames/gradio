@@ -67,13 +67,6 @@ class Component(Block):
             "css": self.css,
         }
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        """
-        Return dictionary of shortcut implementations
-        """
-        return {}
-
     def save_flagged(
         self, dir: str, label: Optional[str], data: Any, encryption_key: bool
     ) -> Any:
@@ -128,12 +121,25 @@ class Component(Block):
         return {"name": file, "data": data}
 
     @classmethod
-    def get_all_shortcut_implementations(cls):
-        shortcuts = {}
+    def get_str_shortcut_component(
+        cls, str_shortcut: str
+    ) -> (bool, Optional[Component]):
+        """
+        Gets component class, where class name equals to str_shortcut.
+
+        @param str_shortcut: string shortcut of a component
+        @return:
+            True, found_class or
+            False, None
+        """
         for sub_cls in cls.__subclasses__():
-            for shortcut, parameters in sub_cls.get_shortcut_implementations().items():
-                shortcuts[shortcut] = (sub_cls, parameters)
-        return shortcuts
+            if sub_cls.__name__.lower() == str_shortcut:
+                return True, sub_cls
+            # For template components
+            for sub_sub_cls in sub_cls.__subclasses__():
+                if sub_sub_cls.__name__.lower() == str_shortcut:
+                    return True, sub_sub_cls
+        return False, None
 
     # Input Functionalities
     def preprocess(self, x: Any) -> Any:
@@ -260,13 +266,6 @@ class Textbox(Component):
             "placeholder": self.placeholder,
             "default_value": self.default_value,
             **super().get_template_context(),
-        }
-
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "text": {},
-            "textbox": {"lines": 7},
         }
 
     # Input Functionalities
@@ -423,12 +422,6 @@ class Number(Component):
     def get_template_context(self):
         return {"default_value": self.default_value, **super().get_template_context()}
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "number": {},
-        }
-
     def preprocess(self, x: float | None) -> Optional[float]:
         """
         Parameters:
@@ -576,12 +569,6 @@ class Slider(Component):
             **super().get_template_context(),
         }
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "slider": {},
-        }
-
     def preprocess(self, x: float) -> float:
         """
         Parameters:
@@ -679,12 +666,6 @@ class Checkbox(Component):
 
     def get_template_context(self):
         return {"default_value": self.default_value, **super().get_template_context()}
-
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "checkbox": {},
-        }
 
     def preprocess(self, x: bool) -> bool:
         """
@@ -1081,21 +1062,6 @@ class Image(Component):
             label=label, requires_permissions=requires_permissions, **kwargs
         )
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "image": {},
-            "webcam": {"source": "webcam"},
-            "sketchpad": {
-                "image_mode": "L",
-                "source": "canvas",
-                "shape": (28, 28),
-                "invert_colors": True,
-            },
-            "plot": {"type": "plot"},
-            "pil": {"type": "pil"},
-        }
-
     def get_template_context(self):
         return {
             "image_mode": self.image_mode,
@@ -1396,13 +1362,6 @@ class Video(Component):
         self.source = source
         super().__init__(label=label, css=css, **kwargs)
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "video": {},
-            "playable_video": {"type": "mp4"},
-        }
-
     def get_template_context(self):
         return {
             "source": self.source,
@@ -1576,14 +1535,6 @@ class Audio(Component):
             "source": self.source,  # TODO: This did not exist in output template, careful here if an error arrives
             "default_value": self.default_value,
             **super().get_template_context(),
-        }
-
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "audio": {},
-            "microphone": {"source": "microphone"},
-            "mic": {"source": "microphone"},
         }
 
     def preprocess_example(self, x):
@@ -1885,13 +1836,6 @@ class File(Component):
             **super().get_template_context(),
         }
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "file": {},
-            "files": {"file_count": "multiple"},
-        }
-
     def preprocess_example(self, x):
         return {"name": x, "data": None, "is_example": True}
 
@@ -2069,15 +2013,6 @@ class Dataframe(Component):
             **super().get_template_context(),
         }
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "dataframe": {"type": "pandas"},
-            "numpy": {"type": "numpy"},
-            "matrix": {"type": "array"},
-            "list": {"type": "array", "col_count": 1},
-        }
-
     def preprocess(self, x: List[List[str | Number | bool]]):
         """
         Parameters:
@@ -2206,12 +2141,6 @@ class Timeseries(Component):
             **super().get_template_context(),
         }
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "timeseries": {},
-        }
-
     def preprocess_example(self, x):
         return {"name": x, "is_example": True}
 
@@ -2295,12 +2224,6 @@ class State(Component):
     def get_template_context(self):
         return {"default_value": self.default_value, **super().get_template_context()}
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "state": {},
-        }
-
 
 # Only Output Components
 class Label(Component):
@@ -2381,12 +2304,6 @@ class Label(Component):
             else:
                 return y
         raise ValueError("Unable to deserialize output: {}".format(y))
-
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "label": {},
-        }
 
     def save_flagged(self, dir, label, data, encryption_key):
         """
@@ -2484,12 +2401,6 @@ class HighlightedText(Component):
             **super().get_template_context(),
         }
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "highlight": {},
-        }
-
     def postprocess(self, y):
         """
         Parameters:
@@ -2558,12 +2469,6 @@ class JSON(Component):
         else:
             return y
 
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "json": {},
-        }
-
     def save_flagged(self, dir, label, data, encryption_key):
         return json.dumps(data)
 
@@ -2617,12 +2522,6 @@ class HTML(Component):
         (str): HTML output
         """
         return x
-
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "html": {},
-        }
 
     def change(self, fn: Callable, inputs: List[Component], outputs: List[Component]):
         """
@@ -2751,12 +2650,6 @@ class Chatbot(Component):
 
     def get_template_context(self):
         return {"default_value": self.default_value, **super().get_template_context()}
-
-    @classmethod
-    def get_shortcut_implementations(cls):
-        return {
-            "chatbot": {},
-        }
 
     def postprocess(self, y):
         """
@@ -2950,8 +2843,11 @@ class Interpretation(Component):
 
 def get_component_instance(comp: str | dict | Component):
     if isinstance(comp, str):
-        shortcut = Component.get_all_shortcut_implementations()[comp]
-        return shortcut[0](**shortcut[1], without_rendering=True)
+        does_exist, component_class = Component.get_str_shortcut_component(comp)
+        if not does_exist:
+            raise ValueError(f"No such component: {comp}")
+        else:
+            return component_class()
     elif isinstance(
         comp, dict
     ):  # a dict with `name` as the input component type and other keys as parameters
